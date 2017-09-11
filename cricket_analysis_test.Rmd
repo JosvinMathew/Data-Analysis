@@ -1,0 +1,219 @@
+---
+title: "cricket_analysis_test"
+author: "Josvin"
+date: "21 August 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read data
+```{r}
+odi = read.csv("C://Users//Administrator//Downloads//datasets-master//odi-batting.csv")
+library(knitr)
+kable(odi[1:5,])
+```
+
+## Top ten Countries
+```{r}
+library(knitr)
+library(dplyr)
+top_ten_countries = odi %>% group_by(Country) %>% summarise(Total_Runs=sum(Runs,na.rm=T)) %>% arrange(-Total_Runs)
+kable(top_ten_countries[1:7,])
+```
+
+##Top run getters
+```{r}
+top_run_getters = odi %>% group_by(Player) %>% summarise(Total_Player_Runs=sum(Runs,na.rm=T)) %>% arrange(-Total_Player_Runs)
+kable(top_run_getters[1:7,])
+```
+
+## Player stats
+```{r}
+top_player  = odi %>% group_by(Player,Country) %>% summarise(Total_player_odi_runs=sum(Runs,na.rm=T),matches = n()) %>% arrange(-matches) 
+kable(top_player[1:20,])
+```
+
+
+## Player versus other countries
+```{r}
+top_matches  = odi %>% group_by(Player,Versus) %>% summarise(Total_odi_runs=sum(Runs,na.rm=T),matches = n()) %>% arrange(-Total_odi_runs)
+kable(top_matches[1:20,])
+```
+
+## Player
+```{r}
+top_matches  = odi %>% filter(Runs>=100) %>% group_by(Player) %>% summarise(Strike_rate=mean(ScoreRate,na.rm=T),Tons = n()) %>% arrange(-Tons)
+kable(top_matches[1:20,])
+```
+
+## Player
+```{r}
+most_ducks  = odi %>% filter(Runs==0) %>% group_by(Player) %>% summarise(Ducks = n()) %>% arrange(-Ducks)
+kable(most_ducks[1:10,])
+```
+
+## Top ten countries by total plyers
+```{r}
+top_countries_players  = odi %>% group_by(Country) %>% summarise(total_no_players = length(unique(Player))) %>% arrange(-total_no_players)
+kable(top_countries_players[1:10,])
+```
+
+
+## OR
+```{r}
+top_countries_players  = odi %>% group_by(Country) %>% summarise(total_no_players = n_distinct(Player)) %>% arrange(-total_no_players)
+kable(top_countries_players[1:10,])
+```
+
+## Top ten grounds by total centuries
+```{r}
+top_ten_grounds = odi %>% filter(Runs>=100) %>% group_by(Ground) %>% summarise(No_of_tons=n()) %>% arrange(-No_of_tons)
+kable(top_ten_grounds[1:10,])
+```
+
+## Sachin's stats and identify how many ducks he has scored
+```{r}
+sachin_matches = odi %>% filter(Player=="Sachin R Tendulkar")
+sachin_ducks = sachin_matches %>% filter(Runs==0) %>%  summarise(player=first(Player),no_of_ducks=n()) %>% arrange(-no_of_ducks)
+head(sachin_ducks)
+```
+
+## Sachin's stats and identify how most ducks he has scored against a opponent
+```{r}
+sachin_matches = odi %>% filter(Player=="Sachin R Tendulkar")
+sachin_ducks = sachin_matches %>% filter(Runs==0) %>% group_by(Versus) %>% summarise(player=first(Player),no_of_ducks=n()) %>% arrange(-no_of_ducks)
+head(sachin_ducks)
+```
+
+## Sachin's stats and identify how many tons he has scored against an opponent
+```{r}
+sachin_matches = odi %>% filter(Player=="Sachin R Tendulkar")
+sachin_tons = sachin_matches %>% filter(Runs>=100) %>% group_by(Versus) %>% summarise(no_of_tons=n()) %>% arrange(-no_of_tons)
+kable(sachin_tons)
+```
+
+## Sachin's stats and identify how many times he has missed a ton
+```{r}
+sachin_matches_missed_ton = odi %>% filter(Player=="Sachin R Tendulkar",Runs>90,Runs<100) %>% summarise(player=first(Player),no_of_tonsmissed=n()) %>% arrange(-no_of_tonsmissed)
+head(sachin_matches_missed_ton)
+```
+
+##Number of fiftys hit by Sachin
+```{r}
+sachin_matches_fiftys = odi %>% filter(Player=="Sachin R Tendulkar",Runs>49,Runs<100) %>% summarise(player=first(Player),no_of_fiftys=n())
+head(sachin_matches_fiftys)
+```
+
+##Creating a new column using existing column
+##Mutate function
+
+```{r}
+odi = odi %>% mutate(ducks=if_else(Runs==0,1,0))
+head(odi)
+```
+##Similarly
+```{r}
+odi = odi %>% mutate(ducks=if_else(Runs==0,1,0))
+odi = odi %>% mutate(Centuries = if_else(Runs>99,1,0))
+odi = odi %>% mutate(missed_centuries = if_else(Runs>90 & Runs<100,1,0))
+odi = odi %>% mutate(fifties = if_else(Runs>49 & Runs<100,1,0))
+head(odi)
+
+
+##Players Summary
+players_summary = odi %>% group_by(Player) %>% summarise(Total_Runs=sum(Runs,na.rm=T),Centuries=sum(Centuries,na.rm=T),Ducks=sum(ducks,na.rm=T),Fifties=sum(fifties,na.rm=T),Missed_Centuries=sum(missed_centuries,na.rm=T)) %>% arrange(-Total_Runs)
+kable(players_summary[1:10,])
+```
+
+##Convert MatchDate column to date format(Use as.Date function.Leran how to pass the date format from documentation)
+```{r}
+oditemp=odi
+oditemp$date = as.Date(as.character(odi$MatchDate),format = "%m-%d-%Y")
+kable(oditemp[1:10,])
+```
+
+##http://www.statmethods.net/input/dates.html
+```{r}
+oditemp$Year= format(oditemp$date,format = "%Y")
+oditemp$Month=format(oditemp$date,format = "%B")
+oditemp$DAY  =format(oditemp$date,format = "%a")
+oditemp$DAY_OF_WEEK=weekdays(oditemp$date)
+kable(oditemp[1:5,])
+```
+
+
+##Number of centuries in each year by Sachin
+```{r}
+sachin_yearly_tons = oditemp %>% filter(Player=="Sachin R Tendulkar",Runs>99) %>% group_by(Year) %>% summarise(Tons=n()) %>% arrange(-Tons)
+kable(sachin_yearly_tons[1:10,])
+```
+
+##SCATTER PLOT FOR RUNS AND SCORE RATE
+```{r}
+ggplot(odi,aes(x=Runs,y=ScoreRate)) + geom_point()
+```
+
+```{r}
+ggplot(odi,aes(x=Runs,y=ScoreRate,color=Country)) + geom_point()
+```
+##Since it is not clear from the plot,we can just get the trendline by using,
+
+```{r}
+ggplot(odi,aes(x=Runs,y=ScoreRate)) + geom_smooth()
+```
+
+##Scatter Plot for Sachin
+```{r}
+oditemp=odi
+sachin_rows=filter(oditemp,Player=="Sachin R Tendulkar")
+ggplot(sachin_rows,aes(x=Runs,y=ScoreRate)) + geom_point() + geom_smooth()
+```
+##Scatter Plot for Sehwag
+```{r}
+oditemp=odi
+sehwag_rows=filter(oditemp,Player=="Virender Sehwag")
+ggplot(sehwag_rows,aes(x=Runs,y=ScoreRate)) + geom_point() + geom_smooth()
+```
+
+
+###Indian Team Performance
+```{r}
+india_rows = filter(odi,Country=='India')
+players_runs = india_rows %>% group_by(Player) %>% summarise(Total_Runs=sum(Runs,na.rm=T)) %>% arrange(-Total_Runs)
+top_player_names=head(players_runs$Player,10)
+top_player_names ## This is an array
+
+top_player_rows=odi[odi$Player %in% top_player_names,]
+dim(top_player_rows)
+ggplot(top_player_rows,aes(x=Runs,y=ScoreRate,color=Player))+geom_smooth() +facet_wrap(~Player)
+```
+
+###Top players performance across all countries
+```{r}
+all_players_runs = odi %>% group_by(Player) %>% summarise(Total_Runs=sum(Runs,na.rm=T)) %>% arrange(-Total_Runs)
+top_player_names=head(all_players_runs$Player,10)
+top_player_names ## This is an array,just a bunch of values,class of this variable is "factor" as it treats every element in this array as a factor from the main data frame.
+
+top_player_rows=odi[odi$Player %in% top_player_names,] ## This command line will search compare every "Player" from odi and check if it is present in the newly created "top_player_names" array.For all the values checked andif the player from odi and top_player_names matches,it will retrieve all the columns of that rowfrom odi and store in top_player_rows.Now we can plot charts based on various criteria.
+dim(top_player_rows)
+ggplot(top_player_rows,aes(x=Runs,y=ScoreRate,color=Country))+geom_smooth() + facet_wrap(~Player)
+```
+
+###Identify Indian Team Top 10 Players' based on total matches. Plot a bar chart for each of these players total runs yearwise.
+```{r}
+odi$date = as.Date(as.character(odi$MatchDate),format = "%m-%d-%Y")
+odi$Year= format(odi$date,format = "%Y")
+odi$weekday=format(odi$date,format = "%A")
+india_rows = filter(odi,Country=='India')
+player_matches = india_rows %>% group_by(Player) %>% summarise(Total_Matches=n()) %>% arrange(-Total_Matches)
+top_player_names=head(player_matches$Player,10)
+top_player_names ## This is an array
+
+top_player_rows=odi[odi$Player %in% top_player_names,]
+#dim(top_player_rows)
+top_player_stats=top_player_rows %>% group_by(Player,Year) %>% summarise(Total_no_of_Runs=sum(Runs,na.rm=T),Avg_Runs=mean(Runs,na.rm=T)) %>% arrange(-Total_no_of_Runs)
+ggplot(top_player_stats,aes(x=Year,y=Total_no_of_Runs,fill=-Avg_Runs))+geom_bar(stat='identity')+facet_wrap(~Player)
+```
